@@ -1,0 +1,19 @@
+[project]
+name = "travelpath"
+version = "0.1.0"
+description = "Planificador de rutas y optimización de viajes en grafos con Branch and Bound y Dijkstra"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "flet>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "lib"]
+addopts = "-v"
