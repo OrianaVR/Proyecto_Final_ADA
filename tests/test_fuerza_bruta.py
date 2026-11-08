@@ -4,7 +4,6 @@ from lib.algorithms.fuerza_bruta import fuerza_bruta_rutas
 from lib.algorithms.matriz_caminos import MatrizCaminos
 from lib.structures.grafo import Grafo
 from lib.structures.tabla_precedencias import TablaPrecedencias
-from utils_grafos import crear_grafo
 
 
 @pytest.fixture(scope="module")
@@ -51,3 +50,4 @@ def test_fuerza_bruta_sin_destinos(grafo):
     rutas = fuerza_bruta_rutas(matriz, presupuesto=100)
     assert len(rutas) == 1
     assert rutas[0].destinos == [0]
+

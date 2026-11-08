@@ -25,6 +25,16 @@ class EstadisticasPoda:
     podas_mejor_costo: int = 0
     tiempo_segundos: float = 0.0
 
+    @property
+    def tiempo_usado(self) -> float:
+        """Alias de compatibilidad para tiempo_segundos."""
+        return self.tiempo_segundos
+
+    @property
+    def podas_costo(self) -> int:
+        """Alias de compatibilidad para podas_mejor_costo."""
+        return self.podas_mejor_costo
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "nodos_generados": self.nodos_generados,
@@ -33,6 +43,7 @@ class EstadisticasPoda:
             "podas_presupuesto": self.podas_presupuesto,
             "podas_mejor_costo": self.podas_mejor_costo,
             "tiempo_segundos": self.tiempo_segundos,
+            "tiempo_usado": self.tiempo_segundos,
         }
 
 
@@ -52,6 +63,9 @@ class ResultadoBB:
     def __len__(self) -> int:
         return len(self.rutas)
 
+    def __bool__(self) -> bool:
+        return len(self.rutas) > 0
+
     def __iter__(self):
         return iter(self.rutas)
 
@@ -59,22 +73,34 @@ class ResultadoBB:
         return self.rutas[index]
 
 
-@dataclass(order=True)
+@dataclass
 class Estado:
-    """Representa un nodo en el árbol de búsqueda de Branch and Bound."""
+    """Representa un nodo en el árbol de búsqueda de Branch and Bound.
+    
+    Campos alineados con la especificación del proyecto:
+    ruta (lista), visitados (bitmask entero), g (peso acumulado), m (dinero acumulado), f = g + h.
+    """
 
-    # Prioridad principal de comparación: f = g + h
-    f: float
-    # Desempate secundario: ramas más profundas salen primero (-longitud)
-    longitud_negativa: int
-    ruta: List[int] = field(compare=False)
-    visitados: int = field(compare=False)  # Bitmask de destinos visitados
-    g: float = field(compare=False)        # Peso acumulado
-    m: float = field(compare=False)        # Dinero acumulado en $
+    ruta: List[int]
+    visitados: int  # Bitmask de destinos visitados
+    g: float        # Peso acumulado (criterio de optimización)
+    m: float        # Dinero acumulado en $ (restricción dura)
+    f: float        # Función de evaluación f = g + h
+    longitud_negativa: int = field(init=False, default=0)
+
+    def __post_init__(self):
+        # Desempate secundario: a igual f, explorar primero rutas más profundas
+        self.longitud_negativa = -len(self.ruta)
 
     @property
     def ultimo(self) -> int:
+        """Último destino alcanzado en el recorrido parcial."""
         return self.ruta[-1]
+
+    def __lt__(self, other: Estado) -> bool:
+        if abs(self.f - other.f) > 1e-9:
+            return self.f < other.f
+        return len(self.ruta) > len(other.ruta)
 
 
 def _armar_ruta_desde_secuencia(secuencia: List[int], matriz: MatrizCaminos) -> Ruta:
@@ -152,9 +178,12 @@ class BranchAndBound:
         if precedencias is None:
             self.precedencias: Optional[TablaPrecedencias] = None
         elif isinstance(precedencias, TablaPrecedencias):
+            precedencias.validar_sin_ciclos()
             self.precedencias = precedencias
         elif isinstance(precedencias, dict):
-            self.precedencias = TablaPrecedencias(precedencias)
+            tp = TablaPrecedencias(precedencias)
+            tp.validar_sin_ciclos()
+            self.precedencias = tp
         else:
             raise TypeError("Precedencias debe ser TablaPrecedencias, dict o None.")
 
@@ -196,7 +225,6 @@ class BranchAndBound:
             cota += min_ingreso
 
         if self.ida_y_vuelta:
-            # El regreso al origen se produce desde el último nodo visitado de R
             cota += min(self._peso(x, self.origen) for x in r_set)
 
         return cota
@@ -263,12 +291,11 @@ class BranchAndBound:
 
         cola: ColaPrioridad[Estado] = ColaPrioridad()
         estado_raiz = Estado(
-            f=h_inicial,
-            longitud_negativa=-1,
             ruta=[self.origen],
             visitados=0,
             g=0.0,
             m=0.0,
+            f=h_inicial,
         )
         cola.insertar(estado_raiz, (round(h_inicial, 9), -1))
         estadisticas.nodos_generados += 1
@@ -347,12 +374,11 @@ class BranchAndBound:
                 nueva_ruta = e.ruta + [d]
 
                 nuevo_estado = Estado(
-                    f=f2,
-                    longitud_negativa=-len(nueva_ruta),
                     ruta=nueva_ruta,
                     visitados=mascara_hijo,
                     g=g2,
                     m=m2,
+                    f=f2,
                 )
                 # La prioridad desempata primero por f y luego por profundidad
                 cola.insertar(nuevo_estado, (round(f2, 9), -len(nueva_ruta)))

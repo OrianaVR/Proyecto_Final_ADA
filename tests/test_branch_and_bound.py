@@ -2,12 +2,18 @@ import random
 import time
 import pytest
 
-from lib.algorithms.branch_and_bound import BranchAndBound, ResultadoBB
+from lib.algorithms.branch_and_bound import BranchAndBound, Estado, ResultadoBB
 from lib.algorithms.fuerza_bruta import fuerza_bruta_rutas
 from lib.algorithms.matriz_caminos import MatrizCaminos
+from lib.models.destino import Destino
 from lib.structures.grafo import Grafo
-from lib.structures.tabla_precedencias import TablaPrecedencias
-from utils_grafos import crear_grafo
+from lib.structures.tabla_precedencias import CicloPrecedenciasError, TablaPrecedencias
+
+
+def crear_grafo(costo, tiempo, alfa=0.5, beta=0.5) -> Grafo:
+    """Helper auxiliar local para generar un Grafo a partir de matrices sin dependencias externas."""
+    destinos = [Destino(id=i, nombre=f"C{i}") for i in range(len(costo))]
+    return Grafo(destinos, costo, tiempo, alfa=alfa, beta=beta)
 
 
 @pytest.fixture(scope="module")
@@ -216,8 +222,16 @@ def test_ida_y_vuelta_suma_peso_y_dinero(grafo):
     regreso_peso = matriz.peso(ultimo_destino, 0)
     regreso_dinero = matriz.dinero(ultimo_destino, 0)
 
+    # Verificar que el peso y dinero total sumen exactamente el camino completo
     assert r_iv.peso_total >= r_ida.peso_total
     assert r_iv.costo_total >= r_ida.costo_total
+
+    secuencia = r_iv.destinos
+    suma_peso_esperada = sum(matriz.peso(a, b) for a, b in zip(secuencia, secuencia[1:]))
+    suma_dinero_esperada = sum(matriz.dinero(a, b) for a, b in zip(secuencia, secuencia[1:]))
+
+    assert r_iv.peso_total == pytest.approx(suma_peso_esperada)
+    assert r_iv.costo_total == pytest.approx(suma_dinero_esperada)
 
 
 # ==============================================================================
@@ -292,10 +306,9 @@ def test_cota_h_nunca_sobreestima_admisibilidad(grafo):
 
 
 # ==============================================================================
-# Pruebas adicionales: Validaciones de límites y errores
+# Pruebas adicionales: Validaciones de límites, tipos y contratos
 # ==============================================================================
 def test_mas_de_12_destinos_lanza_error(grafo):
-    # Crear grafo sintético con 15 destinos
     n = 15
     costo = [[10.0 if i != j else 0.0 for j in range(n)] for i in range(n)]
     tiempo = [[1.0 if i != j else 0.0 for j in range(n)] for i in range(n)]
@@ -310,3 +323,42 @@ def test_k_invalido_lanza_error(grafo):
     matriz = MatrizCaminos.construir(grafo, 0, [1, 2])
     with pytest.raises(ValueError, match="mayor que 0"):
         BranchAndBound(matriz, presupuesto=1000.0, k=0)
+
+
+def test_ciclo_en_precedencias_lanza_error(grafo):
+    matriz = MatrizCaminos.construir(grafo, 0, [1, 2])
+    tabla = TablaPrecedencias()
+    tabla.agregar_precedencia(1, 2)
+    tabla.agregar_precedencia(2, 1)  # Ciclo directo
+
+    with pytest.raises(CicloPrecedenciasError):
+        BranchAndBound(matriz, presupuesto=1000.0, precedencias=tabla)
+
+
+def test_estado_dataclass_y_desempate():
+    # Instanciación por kwargs
+    e1 = Estado(ruta=[0, 1], visitados=1, g=10.0, m=20.0, f=30.0)
+    e2 = Estado(ruta=[0, 1, 2], visitados=3, g=10.0, m=20.0, f=30.0)
+
+    assert e1.ultimo == 1
+    assert e2.ultimo == 2
+    # Con igual f, e2 es más profundo que e1 -> e2 < e1 (sale antes)
+    assert e2 < e1
+
+
+def test_estadisticas_y_resultado_bb_properties(grafo):
+    matriz = MatrizCaminos.construir(grafo, 0, [1, 2])
+    res = BranchAndBound(matriz, presupuesto=10000.0, k=2).mejores_rutas()
+
+    assert res.mejor_ruta is not None
+    assert len(res) == len(res.rutas)
+    assert bool(res) is True
+    assert res[0] == res.rutas[0]
+
+    st = res.estadisticas
+    d = st.to_dict()
+    assert "nodos_generados" in d
+    assert "nodos_expandidos" in d
+    assert "podas_mejor_costo" in d
+    assert st.tiempo_usado >= 0
+    assert st.podas_costo == st.podas_mejor_costo

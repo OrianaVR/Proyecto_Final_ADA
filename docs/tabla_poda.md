@@ -1,6 +1,6 @@
 # Tabla de Poda: Branch and Bound vs Búsqueda Exhaustiva (n!)
 
-Documento de análisis empírico y sustento teórico para la sustentación del proyecto **TravelPath** (Integrante 3).
+Documento de análisis empírico y sustento teórico para la sustentación del proyecto **TravelPath** 
 
 ---
 
@@ -43,3 +43,4 @@ Mediciones promedio obtenidas sobre múltiples matrices de distancias calculadas
    El porcentaje de poda supera el **95%** a partir de $n \ge 7$ y alcanza el **99.87%** en $n = 10$, manteniendo tiempos de respuesta interactivos (< 0.5 segundos) ideales para la interfaz gráfica del usuario.
 3. **Poda por Presupuesto:**
    Cuando el presupuesto del usuario es ajustado, la cota inferior monetaria `cota_dinero` descarta ramas en niveles superiores del árbol, reduciendo aún más el número de nodos generados.
+

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import List, Optional
+from typing import Dict, List, Optional, Set
 
 from lib.algorithms.matriz_caminos import MatrizCaminos
 from lib.models.arista import Arista
@@ -51,7 +51,7 @@ def _armar_ruta_desde_secuencia(secuencia: List[int], matriz: MatrizCaminos) -> 
 def fuerza_bruta_rutas(
     matriz: MatrizCaminos,
     presupuesto: float,
-    precedencias: Optional[TablaPrecedencias] = None,
+    precedencias: Optional[TablaPrecedencias | Dict[int, Set[int]]] = None,
     k: int = 10,
     ida_y_vuelta: bool = False,
 ) -> List[Ruta]:
@@ -63,7 +63,7 @@ def fuerza_bruta_rutas(
     Args:
         matriz: MatrizCaminos con distancias precalculadas D_peso, D_dinero y D_min.
         presupuesto: Dinero máximo disponible en pesos colombianos ($).
-        precedencias: TablaPrecedencias opcional con restricciones de orden parcial.
+        precedencias: TablaPrecedencias o dict opcional con restricciones de orden parcial.
         k: Cantidad máxima de rutas a retornar (por defecto 10).
         ida_y_vuelta: Si True, el recorrido debe finalizar regresando al origen.
         
@@ -72,6 +72,13 @@ def fuerza_bruta_rutas(
     """
     origen = matriz.nodos[0]
     destinos = matriz.nodos[1:]
+
+    # Normalizar precedencias si se pasó un dict
+    tabla_prec: Optional[TablaPrecedencias] = None
+    if isinstance(precedencias, TablaPrecedencias):
+        tabla_prec = precedencias
+    elif isinstance(precedencias, dict):
+        tabla_prec = TablaPrecedencias(precedencias)
 
     # Caso base sin destinos: solo se visita el origen
     if not destinos:
@@ -83,11 +90,11 @@ def fuerza_bruta_rutas(
 
     for perm in itertools.permutations(destinos):
         # 1. Validar precedencias secuencialmente
-        if precedencias is not None:
+        if tabla_prec is not None:
             visitados = {origen}
             es_valido = True
             for d in perm:
-                if not precedencias.puede_visitar(d, visitados):
+                if not tabla_prec.puede_visitar(d, visitados):
                     es_valido = False
                     break
                 visitados.add(d)
