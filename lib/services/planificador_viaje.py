@@ -27,6 +27,7 @@ class ResultadoPlanificacion:
     mensaje_error: Optional[str] = None
     minimo_necesario: Optional[float] = None
     garantizado_optimo: bool = True
+    presupuesto: Optional[float] = None
 
     @property
     def exitosa(self) -> bool:
@@ -44,7 +45,9 @@ class PlanificadorViaje:
         try:
             tabla = self._validar_entrada(entrada, nombres)
         except (ValueError, CicloPrecedenciasError) as error:
-            return ResultadoPlanificacion(mensaje_error=str(error))
+            return ResultadoPlanificacion(
+                mensaje_error=str(error), presupuesto=entrada.presupuesto
+            )
 
         try:
             self.grafo.configurar_pesos(entrada.alfa, entrada.beta)
@@ -60,6 +63,7 @@ class PlanificadorViaje:
                 return ResultadoPlanificacion(
                     rutas=[ruta],
                     modalidad="dijkstra_por_tramos",
+                    presupuesto=entrada.presupuesto,
                 )
 
             matriz = MatrizCaminos.construir(
@@ -84,11 +88,13 @@ class PlanificadorViaje:
                     ),
                     minimo_necesario=minimo,
                     garantizado_optimo=resultado.garantizado_optimo,
+                    presupuesto=entrada.presupuesto,
                 )
             return ResultadoPlanificacion(
                 rutas=resultado.rutas,
                 modalidad="branch_and_bound",
                 garantizado_optimo=resultado.garantizado_optimo,
+                presupuesto=entrada.presupuesto,
             )
         except PresupuestoInsuficienteError as error:
             return ResultadoPlanificacion(
@@ -97,9 +103,12 @@ class PlanificadorViaje:
                     entrada.presupuesto, error.minimo_necesario
                 ),
                 minimo_necesario=error.minimo_necesario,
+                presupuesto=entrada.presupuesto,
             )
         except (IndexError, ValueError, KeyError) as error:
-            return ResultadoPlanificacion(mensaje_error=str(error))
+            return ResultadoPlanificacion(
+                mensaje_error=str(error), presupuesto=entrada.presupuesto
+            )
 
     def _validar_entrada(
         self, entrada: Entrada, nombres: dict[int, str]

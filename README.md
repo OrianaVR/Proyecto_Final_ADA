@@ -32,6 +32,7 @@ Proyecto_Final_ADA/
 │   │   ├── branch_and_bound.py       # Branch and Bound con cotas admisibles, podas y listado top-K
 │   │   └── fuerza_bruta.py           # Oráculo de evaluación exhaustiva para verificación en tests
 │   ├── services/                     # Servicios coordinadores (modalidad y validaciones)
+│   │   └── planificador_viaje.py     # Coordinador único y resultado uniforme
 │   └── ui/                           # Interfaz de usuario (Flet)
 │       ├── pantalla_formulario.py
 │       ├── pantalla_resultados.py
@@ -109,3 +110,7 @@ Para iniciar la interfaz gráfica de usuario:
 ```bash
 python main.py
 ```
+
+El formulario permite seleccionar hasta 12 destinos, configurar presupuesto,
+K, ida y vuelta y las ponderaciones α/β. La pantalla de resultados ordena las
+rutas por peso, muestra el sobrante y detalla sus tramos.

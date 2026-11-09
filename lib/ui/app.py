@@ -18,7 +18,19 @@ def main(page: ft.Page):
     contenedor = ft.Container(expand=True)
 
     def ver_formulario():
-        contenedor.content = PantallaFormulario(grafo=grafo)
+        contenedor.content = PantallaFormulario(
+            grafo=grafo,
+            on_calcular=ver_resultados,
+        )
+        page.update()
+
+    def ver_resultados(resultado):
+        contenedor.content = PantallaResultados(
+            grafo=grafo,
+            resultado=resultado,
+            presupuesto=resultado.presupuesto,
+            on_volver=ver_formulario,
+        )
         page.update()
 
     page.add(contenedor)
