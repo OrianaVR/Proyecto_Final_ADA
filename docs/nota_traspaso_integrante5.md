@@ -6,5 +6,7 @@
 4. `PantallaFormulario` construye `Entrada` y muestra errores al usuario.
 5. `PantallaResultados` ordena por peso y detalla cada tramo.
 6. El callback de la aplicación transfiere el `ResultadoPlanificacion`.
-7. La suite ejecutada: 94 pruebas aprobadas.
-8. Pendiente: revisión manual de Integrante 5 durante 15 minutos.
+7. La suite ejecutada validó los algoritmos existentes y el coordinador: 94 pruebas aprobadas.
+8. La validación funcional confirmó los flujos de orden total y orden parcial hasta resultados.
+9. Se verificaron los mensajes de ciclo, precedencia, exceso de destinos y presupuesto insuficiente.
+10. También se confirmó el orden ascendente por peso, el desglose por tramo y el presupuesto restante.
