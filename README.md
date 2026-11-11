@@ -66,13 +66,26 @@ Proyecto_Final_ADA/
 ### 1. Requisitos previos
 - **Python 3.11 o superior**.
 
-### 2. Instalación de dependencias
+### 2. Entorno virtual (recomendado)
+```bash
+# Desde la carpeta Proyecto_Final_ADA:
+python -m venv .venv
+# Windows (PowerShell):
+.\.venv\Scripts\Activate.ps1
+# Linux / macOS:
+source .venv/bin/activate
+```
+
+### 3. Instalación de dependencias
 ```bash
 pip install -r requirements.txt
 ```
 
 Las dependencias principales son:
-- `flet>=0.25.0`: Framework de interfaz de usuario.
+- `flet[all]>=0.27,<0.28`: Framework de interfaz de usuario. **Importante:** se fija
+  a la serie 0.27.x. Es la primera que incluye `ReorderableListView` (requerido por
+  el formulario) y conserva la API `ft.app(target=...)`. Las versiones 1.x reescriben
+  la API y rompen la aplicación.
 - `pytest>=8.0.0`: Framework de ejecución de pruebas unitarias.
 
 ---
@@ -111,6 +124,26 @@ Para iniciar la interfaz gráfica de usuario:
 python main.py
 ```
 
-El formulario permite seleccionar hasta 12 destinos, configurar presupuesto,
-K, ida y vuelta y las ponderaciones α/β. La pantalla de resultados ordena las
-rutas por peso, muestra el sobrante y detalla sus tramos.
+La aplicación tiene tres pantallas:
+
+1. **Formulario:** selecciona hasta 12 destinos, configura presupuesto, K, ida y
+   vuelta, las ponderaciones α/β y, opcionalmente, un orden de visita.
+2. **Resultados:** ordena las rutas por peso, muestra el presupuesto restante y
+   detalla cada tramo. Cada ruta ofrece un botón **«Ver en grafo»**.
+3. **Grafo visual:** dibuja los destinos en círculo con sus pesos, resalta el
+   origen y anima el recorrido de la ruta elegida tramo por tramo.
+
+### Previsualizar solo la pantalla de grafo
+
+Para ver la pantalla de grafo y su simulación de forma aislada (sin pasar por el
+formulario), usa el script de previsualización:
+
+```bash
+python preview_grafo.py
+```
+
+Calcula rutas reales con el planificador y abre el flujo resultados → grafo,
+donde puedes pulsar «Ver en grafo» y luego «Simular recorrido».
+
+Consulta el **[manual de uso](docs/manual_uso.md)** para el detalle de cada
+pantalla y el **[informe técnico](docs/tabla_poda.md)** para el análisis de poda.
