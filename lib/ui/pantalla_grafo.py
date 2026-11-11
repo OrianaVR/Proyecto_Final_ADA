@@ -176,6 +176,7 @@ class PantallaGrafo(ft.Container):
         Sirve para separar la etiqueta de peso de la propia arista y evitar que
         el texto quede montado sobre la línea.
         """
+        
         mx, my = (x1 + x2) / 2, (y1 + y2) / 2
         dx, dy = x2 - x1, y2 - y1
         longitud = math.hypot(dx, dy) or 1.0

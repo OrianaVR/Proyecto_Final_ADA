@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import inf
 from typing import List, Optional
 
 from lib.algorithms.branch_and_bound import BranchAndBound
@@ -78,8 +79,14 @@ class PlanificadorViaje:
             )
             resultado = planificador.mejores_rutas()
             if not resultado.rutas:
-                minimo = planificador.cota_dinero(
-                    entrada.origen, entrada.destinos
+                # La cota de Branch and Bound sirve para podar, pero no es el
+                # mínimo factible cuando existen precedencias. Para el mensaje
+                # al usuario calculamos el mínimo monetario exacto respetando
+                # esas reglas.
+                minimo = self._minimo_dinero_factible(
+                    matriz,
+                    tabla,
+                    ida_y_vuelta=entrada.ida_y_vuelta,
                 )
                 return ResultadoPlanificacion(
                     modalidad="branch_and_bound",
@@ -109,6 +116,66 @@ class PlanificadorViaje:
             return ResultadoPlanificacion(
                 mensaje_error=str(error), presupuesto=entrada.presupuesto
             )
+
+    @staticmethod
+    def _minimo_dinero_factible(
+        matriz: MatrizCaminos,
+        precedencias: TablaPrecedencias,
+        ida_y_vuelta: bool = False,
+    ) -> float:
+        """Calcula el mínimo monetario real respetando las precedencias.
+
+        Usa programación dinámica sobre subconjuntos. A diferencia de
+        ``cota_dinero``, que es una cota inferior para podar, este método solo
+        se usa para informar al usuario y evalúa órdenes factibles completos.
+        Su complejidad es O(n²·2ⁿ), aceptable para el límite de 12 destinos.
+        """
+        origen = matriz.nodos[0]
+        destinos = list(matriz.nodos[1:])
+        n = len(destinos)
+        if not destinos:
+            return 0.0
+
+        posiciones = {destino: indice for indice, destino in enumerate(destinos)}
+        mascaras_predecesores: list[int] = []
+        for destino in destinos:
+            mascara = 0
+            for predecesor in precedencias.obtener_predecesores(destino):
+                if predecesor == origen:
+                    continue  # el origen ya se considera visitado
+                if predecesor not in posiciones:
+                    # La regla exige una ciudad que no forma parte del viaje.
+                    return inf
+                mascara |= 1 << posiciones[predecesor]
+            mascaras_predecesores.append(mascara)
+
+        # máscara -> {último nodo: dinero mínimo}
+        dp: list[dict[int, float]] = [dict() for _ in range(1 << n)]
+        dp[0][origen] = 0.0
+        mascara_final = (1 << n) - 1
+
+        for mascara in range(1 << n):
+            for ultimo, dinero in list(dp[mascara].items()):
+                for indice, destino in enumerate(destinos):
+                    bit = 1 << indice
+                    if mascara & bit:
+                        continue
+                    if mascaras_predecesores[indice] & mascara != mascaras_predecesores[indice]:
+                        continue
+
+                    nueva_mascara = mascara | bit
+                    nuevo_dinero = dinero + matriz.dinero_min(ultimo, destino)
+                    anterior = dp[nueva_mascara].get(destino, inf)
+                    if nuevo_dinero < anterior:
+                        dp[nueva_mascara][destino] = nuevo_dinero
+
+        minimo = inf
+        for ultimo, dinero in dp[mascara_final].items():
+            total = dinero
+            if ida_y_vuelta:
+                total += matriz.dinero_min(ultimo, origen)
+            minimo = min(minimo, total)
+        return minimo
 
     def _validar_entrada(
         self, entrada: Entrada, nombres: dict[int, str]

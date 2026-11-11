@@ -1,10 +1,16 @@
-"""Punto de inicio y enrutamiento base de la aplicación visual en Flet."""
+"""Punto de inicio y enrutamiento de las pantallas de TravelPath."""
+
+from __future__ import annotations
 
 import flet as ft
+
+from lib.models.entrada import Entrada
+from lib.services.planificador_viaje import ResultadoPlanificacion
 from lib.structures.grafo import Grafo
 from lib.ui.pantalla_formulario import PantallaFormulario
-from lib.ui.pantalla_resultados import PantallaResultados
 from lib.ui.pantalla_grafo import PantallaGrafo
+from lib.ui.pantalla_orden import PantallaOrden
+from lib.ui.pantalla_resultados import PantallaResultados
 
 
 def main(page: ft.Page):
@@ -14,13 +20,9 @@ def main(page: ft.Page):
     page.window.height = 760
 
     grafo = Grafo.desde_json()
-
     contenedor = ft.Container(expand=True)
+    estado: dict[str, object] = {"resultado": None, "entrada": None}
 
-    # Guarda el último resultado para poder volver de grafo a resultados.
-    estado = {"resultado": None}
-
-    # --- Interruptor de tema claro / oscuro ---
     boton_tema = ft.IconButton(
         icon=ft.Icons.LIGHT_MODE,
         tooltip="Cambiar a tema claro",
@@ -38,7 +40,6 @@ def main(page: ft.Page):
         page.update()
 
     boton_tema.on_click = alternar_tema
-
     barra_superior = ft.Row(
         [
             ft.Text("TravelPath", size=18, weight=ft.FontWeight.BOLD),
@@ -50,11 +51,21 @@ def main(page: ft.Page):
     def ver_formulario():
         contenedor.content = PantallaFormulario(
             grafo=grafo,
-            on_calcular=ver_resultados,
+            on_continuar=ver_orden,
         )
         page.update()
 
-    def ver_resultados(resultado):
+    def ver_orden(entrada: Entrada):
+        estado["entrada"] = entrada
+        contenedor.content = PantallaOrden(
+            grafo=grafo,
+            entrada_base=entrada,
+            on_calcular=ver_resultados,
+            on_volver=ver_formulario,
+        )
+        page.update()
+
+    def ver_resultados(resultado: ResultadoPlanificacion):
         estado["resultado"] = resultado
         contenedor.content = PantallaResultados(
             grafo=grafo,

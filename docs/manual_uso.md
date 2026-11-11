@@ -7,24 +7,22 @@ paso.
 
 ---
 
-## 1. Pantalla de formulario
+## 1. Pantalla de datos del viaje
 
-Es la primera pantalla. Define el viaje que quieres planificar.
+Es la primera pantalla. Define los parámetros generales del viaje.
 
 ### Origen
 Elige en el desplegable la ciudad desde la que sales. Es el punto de partida del
 recorrido.
 
 ### Destinos
-Selecciona con los chips las ciudades que quieres visitar. Puedes elegir **hasta
-12 destinos**; si intentas más, la aplicación lo rechaza (ver sección 4). El
-origen no cuenta como destino y no puede repetirse en la lista.
+Selecciona con las casillas las ciudades que quieres visitar. Puedes elegir
+**hasta 12 destinos**; el origen no puede repetirse como destino.
 
 ### Presupuesto
 Escribe el presupuesto en pesos. Es un **límite duro sobre el dinero real**: la
 aplicación solo propone rutas cuyo costo total en pesos cabe dentro de esa cifra.
-El presupuesto nunca se compara contra el «peso» (ver más abajo), sino contra el
-dinero.
+El presupuesto nunca se compara contra el «peso».
 
 ### Cantidad de rutas (K)
 Indica cuántas rutas quieres ver como máximo. Por defecto, 10. La aplicación
@@ -52,24 +50,41 @@ El deslizador α/β te permite decidir qué priorizar:
 El costo y el tiempo se **normalizan** antes de combinarlos, de modo que el
 dinero (que se mide en miles) no aplaste al tiempo (que se mide en horas).
 
-### Definir orden (opcional)
-Con el interruptor «Definir orden» puedes influir en la secuencia de visita:
-
-- **Reordenar la lista:** arrastra los destinos para fijar una secuencia
-  completa. En ese caso la aplicación respeta ese orden exacto y calcula el
-  camino más barato entre cada par consecutivo.
-- **«Este primero» / precedencias:** marca que una ciudad debe visitarse antes
-  que otra. La aplicación busca el mejor orden que respete esas reglas.
-
-Si no defines ningún orden, la aplicación busca libremente el mejor orden
-posible.
-
-### Calcular
-Pulsa **«Calcular»** para generar las rutas. Pasas a la pantalla de resultados.
+Pulsa **«Continuar al orden de visita»** para pasar a la segunda pantalla.
 
 ---
 
-## 2. Pantalla de resultados
+## 2. Pantalla de orden de visita
+
+La segunda pantalla recibe los datos del viaje y permite elegir cómo se define la
+secuencia. La aplicación mantiene visibles las opciones para que sea claro qué
+estás configurando.
+
+### Sin orden
+El algoritmo decide libremente el mejor orden de visita respetando el
+presupuesto y la configuración de ida y vuelta.
+
+### Orden total
+Selecciona **«Orden total: reordenar destinos»** y arrastra la lista completa hasta
+obtener la secuencia deseada. La aplicación respeta ese orden exacto y calcula el
+camino más barato entre cada par consecutivo.
+
+### Precedencias parciales
+Selecciona **«Precedencias: A antes que B»** y agrega reglas como «Bogotá antes
+que Medellín». También puedes marcar una ciudad como primera, lo que crea una
+regla contra todos los destinos seleccionados. Puedes eliminar cualquier regla
+antes de calcular.
+
+Si las reglas se contradicen, la aplicación informa el ciclo de precedencias.
+Cuando no hay una ruta dentro del presupuesto, el mensaje de mínimo necesario
+respeta las precedencias configuradas.
+
+Pulsa **«Calcular rutas»** para obtener los resultados, o **«Volver a datos»**
+para modificar la selección inicial.
+
+---
+
+## 3. Pantalla de resultados
 
 Muestra las rutas encontradas, de la mejor a la peor según su peso.
 
@@ -88,7 +103,7 @@ ruta concreta.
 
 ---
 
-## 3. Pantalla de grafo visual
+## 4. Pantalla de grafo visual
 
 Dibuja los destinos como nodos distribuidos en círculo.
 
@@ -112,7 +127,7 @@ Usa la flecha **«Volver»** para regresar a los resultados.
 
 ---
 
-## 4. Mensajes de error y cómo interpretarlos
+## 5. Mensajes de error y cómo interpretarlos
 
 La aplicación valida tu entrada y muestra mensajes claros cuando algo no cuadra:
 
@@ -125,7 +140,7 @@ La aplicación valida tu entrada y muestra mensajes claros cuando algo no cuadra
 
 ---
 
-## 5. Notas importantes
+## 6. Notas importantes
 
 - El **listado completo** de rutas se implementa como el **listado ordenado de
   las K mejores**. Con muchos destinos el número de órdenes posibles crece como

@@ -124,13 +124,15 @@ Para iniciar la interfaz gráfica de usuario:
 python main.py
 ```
 
-La aplicación tiene tres pantallas:
+La aplicación tiene cuatro pantallas:
 
-1. **Formulario:** selecciona hasta 12 destinos, configura presupuesto, K, ida y
-   vuelta, las ponderaciones α/β y, opcionalmente, un orden de visita.
-2. **Resultados:** ordena las rutas por peso, muestra el presupuesto restante y
+1. **Datos del viaje:** selecciona origen y hasta 12 destinos, configura
+   presupuesto, K, ida y vuelta y las ponderaciones α/β.
+2. **Orden de visita:** elige sin orden, orden total mediante una lista
+   arrastrable o precedencias parciales como «A antes que B» y «este primero».
+3. **Resultados:** ordena las rutas por peso, muestra el presupuesto restante y
    detalla cada tramo. Cada ruta ofrece un botón **«Ver en grafo»**.
-3. **Grafo visual:** dibuja los destinos en círculo con sus pesos, resalta el
+4. **Grafo visual:** dibuja los destinos en círculo con sus pesos, resalta el
    origen y anima el recorrido de la ruta elegida tramo por tramo.
 
 ### Previsualizar solo la pantalla de grafo
