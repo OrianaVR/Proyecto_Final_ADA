@@ -46,7 +46,7 @@ class PantallaFormulario(ft.Container):
             ],
             width=320,
         )
-        self.chips_destinos = ft.Row(wrap=True, spacing=10)
+        self.chips_destinos = ft.ResponsiveRow(spacing=10, run_spacing=4)
         self.lbl_contador = ft.Text("0 / 12 destinos", size=12)
         self.txt_presupuesto = ft.TextField(
             label="Presupuesto ($)", value="500", width=210
@@ -74,6 +74,7 @@ class PantallaFormulario(ft.Container):
                     label=destino.nombre,
                     value=False,
                     data=destino.id,
+                    col={"sm": 12, "md": 6, "lg": 6},
                     on_change=self._cambiar_destino,
                 )
             )
