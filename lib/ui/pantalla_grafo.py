@@ -25,6 +25,7 @@ import flet.canvas as cv
 
 from lib.models.ruta import Ruta
 from lib.structures.grafo import Grafo
+from lib.ui.estilos import encabezado
 
 
 # --- Parámetros de dibujo (constantes de presentación, no de dominio) ---
@@ -38,16 +39,16 @@ _LARGO_FLECHA = 12            # largo de la punta de flecha en los tramos de la 
 _COLOR_NODO = ft.Colors.BLUE_400
 _COLOR_NODO_ORIGEN = ft.Colors.AMBER_400
 _COLOR_NODO_ACTIVO = ft.Colors.ORANGE_ACCENT_400
-_COLOR_ARISTA_BASE = ft.Colors.with_opacity(0.30, ft.Colors.ON_SURFACE)
-_COLOR_ARISTA_BASE_TENUE = ft.Colors.with_opacity(0.10, ft.Colors.ON_SURFACE)
+_COLOR_ARISTA_BASE = ft.Colors.with_opacity(0.30, "#B8D5CA")
+_COLOR_ARISTA_BASE_TENUE = ft.Colors.with_opacity(0.12, "#B8D5CA")
 _COLOR_ARISTA_RUTA = ft.Colors.GREEN_400          # tramo de la ruta ya recorrido
 _COLOR_ARISTA_ACTIVA = ft.Colors.ORANGE_ACCENT_400  # tramo que se está iluminando
 _COLOR_ARISTA_PENDIENTE = ft.Colors.with_opacity(0.35, ft.Colors.GREEN_200)
-# Colores de texto que se adaptan al tema (claro/oscuro) de Flet: ON_SURFACE es
-# oscuro en tema claro y claro en tema oscuro, así el texto siempre contrasta.
-_COLOR_TEXTO = ft.Colors.ON_SURFACE
-_COLOR_TEXTO_PESO = ft.Colors.with_opacity(0.7, ft.Colors.ON_SURFACE)
-_COLOR_TEXTO_PESO_TENUE = ft.Colors.with_opacity(0.25, ft.Colors.ON_SURFACE)
+# El canvas de la ruta se dibuja sobre una superficie oscura fija. Los textos
+# deben ser claros aunque la aplicación esté usando el tema claro.
+_COLOR_TEXTO = "#F4FFFA"
+_COLOR_TEXTO_PESO = "#B8D5CA"
+_COLOR_TEXTO_PESO_TENUE = ft.Colors.with_opacity(0.35, "#B8D5CA")
 
 # Duración (segundos) que cada tramo permanece como "activo" en la animación.
 _DURACION_TRAMO = 0.7
@@ -93,6 +94,11 @@ class PantallaGrafo(ft.Container):
             icon=ft.Icons.PLAY_ARROW,
             on_click=self._on_simular,
             disabled=not self._tiene_tramos(),
+            width=245,
+            height=46,
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=12),
+            ),
         )
 
         self.content = ft.Column(
@@ -101,27 +107,58 @@ class PantallaGrafo(ft.Container):
                     [
                         ft.IconButton(
                             ft.Icons.ARROW_BACK,
-                            tooltip="Volver",
+                            tooltip="Volver a resultados",
                             on_click=lambda _: (
                                 self.on_volver() if self.on_volver else None
                             ),
                         ),
-                        ft.Text(
-                            "Visualización del grafo",
-                            size=22,
-                            weight=ft.FontWeight.BOLD,
+                        encabezado(
+                            "Tu recorrido",
+                            "Explora la ruta elegida y reproduce sus tramos",
+                            ft.Icons.ACCOUNT_TREE,
                         ),
-                    ]
+                        ft.Container(expand=True),
+                        ft.Container(
+                            content=ft.Row(
+                                [ft.Icon(ft.Icons.CHECK_CIRCLE, size=15), ft.Text("Optimizado", size=11)],
+                                spacing=5,
+                            ),
+                            padding=ft.Padding(10, 6, 10, 6),
+                            bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.GREEN),
+                            border_radius=14,
+                        ),
+                    ],
+                    spacing=8,
                 ),
-                self._panel_info_ruta(),
-                ft.Row([self._boton_simular]),
-                self._leyenda(),
-                ft.Container(
-                    content=self.canvas,
-                    alignment=ft.Alignment(0, 0),
+                ft.Row(
+                    [
+                        ft.Container(
+                            content=ft.Column(
+                                [
+                                    self.canvas,
+                                    self._leyenda(),
+                                ],
+                                spacing=8,
+                            ),
+                            padding=14,
+                            bgcolor="#27443F",
+                            border_radius=20,
+                            expand=True,
+                        ),
+                        ft.Container(
+                            content=self._panel_lateral(),
+                            width=285,
+                            padding=18,
+                            bgcolor=ft.Colors.SURFACE,
+                            border_radius=18,
+                        ),
+                    ],
+                    spacing=18,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
                 ),
             ],
             scroll=ft.ScrollMode.AUTO,
+            spacing=16,
         )
 
     # ------------------------------------------------------------------ #
@@ -425,6 +462,75 @@ class PantallaGrafo(ft.Container):
         self._animando = False
         self._boton_simular.disabled = False
         self._boton_simular.update()
+
+    def _panel_lateral(self) -> ft.Control:
+        """Panel lateral para leer la ruta sin competir con el canvas."""
+        if not self.ruta_seleccionada:
+            return ft.Column(
+                [
+                    ft.Icon(ft.Icons.INFO_OUTLINE, color=ft.Colors.PRIMARY, size=32),
+                    ft.Text("Grafo de destinos", size=18, weight=ft.FontWeight.BOLD),
+                    ft.Text(
+                        "Selecciona una ruta en Resultados para ver su recorrido y simularlo.",
+                        size=13,
+                        color=ft.Colors.ON_SURFACE_VARIANT,
+                    ),
+                ],
+                spacing=12,
+            )
+
+        ruta = self.ruta_seleccionada
+        nombres = {d.id: d.nombre for d in self.grafo.destinos}
+        pasos_ruta = []
+        for indice, ciudad in enumerate(ruta.destinos):
+            pasos_ruta.append(
+                ft.Row(
+                    [
+                        ft.Container(
+                            content=ft.Text(str(indice + 1), color=ft.Colors.WHITE, size=11),
+                            width=24,
+                            height=24,
+                            alignment=ft.Alignment(0, 0),
+                            bgcolor=ft.Colors.PRIMARY,
+                            border_radius=12,
+                        ),
+                        ft.Text(nombres.get(ciudad, str(ciudad)), size=13),
+                    ],
+                    spacing=8,
+                )
+            )
+
+        return ft.Column(
+            [
+                ft.Text("Ruta seleccionada", size=18, weight=ft.FontWeight.BOLD),
+                ft.Text(
+                    f"{len(ruta.destinos)} destinos en el itinerario",
+                    size=12,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
+                ),
+                ft.Divider(height=1),
+                ft.Text("Resumen", weight=ft.FontWeight.BOLD),
+                self._metrica_lateral("Peso", f"{ruta.peso_total:.4f}"),
+                self._metrica_lateral("Dinero", f"${ruta.costo_total:,.2f}"),
+                self._metrica_lateral("Tiempo", f"{ruta.tiempo_total:.1f} h"),
+                ft.Divider(height=1),
+                ft.Text("Orden del recorrido", weight=ft.FontWeight.BOLD),
+                ft.Column(pasos_ruta, spacing=7),
+                ft.Container(height=8),
+                self._boton_simular,
+            ],
+            spacing=10,
+            scroll=ft.ScrollMode.AUTO,
+        )
+
+    @staticmethod
+    def _metrica_lateral(nombre: str, valor: str) -> ft.Control:
+        return ft.Row(
+            [
+                ft.Text(nombre, size=12, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                ft.Text(valor, size=13, weight=ft.FontWeight.BOLD),
+            ],
+        )
 
     # ------------------------------------------------------------------ #
     # Panel de información y leyenda

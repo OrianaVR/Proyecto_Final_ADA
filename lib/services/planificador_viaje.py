@@ -29,6 +29,7 @@ class ResultadoPlanificacion:
     minimo_necesario: Optional[float] = None
     garantizado_optimo: bool = True
     presupuesto: Optional[float] = None
+    rutas_fuera_presupuesto: List[Ruta] = field(default_factory=list)
 
     @property
     def exitosa(self) -> bool:
@@ -88,6 +89,13 @@ class PlanificadorViaje:
                     tabla,
                     ida_y_vuelta=entrada.ida_y_vuelta,
                 )
+                alternativa = BranchAndBound(
+                    matriz,
+                    presupuesto=inf,
+                    precedencias=tabla,
+                    k=1,
+                    ida_y_vuelta=entrada.ida_y_vuelta,
+                ).mejores_rutas()
                 return ResultadoPlanificacion(
                     modalidad="branch_and_bound",
                     mensaje_error=self._mensaje_presupuesto(
@@ -96,6 +104,7 @@ class PlanificadorViaje:
                     minimo_necesario=minimo,
                     garantizado_optimo=resultado.garantizado_optimo,
                     presupuesto=entrada.presupuesto,
+                    rutas_fuera_presupuesto=alternativa.rutas[:1],
                 )
             return ResultadoPlanificacion(
                 rutas=resultado.rutas,
@@ -104,6 +113,14 @@ class PlanificadorViaje:
                 presupuesto=entrada.presupuesto,
             )
         except PresupuestoInsuficienteError as error:
+            alternativa = ruta_por_secuencia(
+                self.grafo,
+                entrada.origen,
+                entrada.secuencia_orden or [],
+                presupuesto=None,
+                precedencias=tabla,
+                ida_y_vuelta=entrada.ida_y_vuelta,
+            )
             return ResultadoPlanificacion(
                 modalidad="dijkstra_por_tramos",
                 mensaje_error=self._mensaje_presupuesto(
@@ -111,6 +128,7 @@ class PlanificadorViaje:
                 ),
                 minimo_necesario=error.minimo_necesario,
                 presupuesto=entrada.presupuesto,
+                rutas_fuera_presupuesto=[alternativa],
             )
         except (IndexError, ValueError, KeyError) as error:
             return ResultadoPlanificacion(
