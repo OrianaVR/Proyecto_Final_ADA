@@ -59,7 +59,7 @@ class PantallaFormulario(ft.Container):
         for destino in grafo.destinos:
             self.chips_destinos.controls.append(
                 ft.Chip(
-                    label=destino.nombre,
+                    label=ft.Text(destino.nombre),
                     data=destino.id,
                     on_select=self._cambiar_destino,
                 )
@@ -91,7 +91,7 @@ class PantallaFormulario(ft.Container):
                 self.lbl_ponderaciones,
                 self.mensaje,
                 ft.FilledButton(
-                    content=ft.Text("Calcular"),
+                    text="Calcular",
                     icon=ft.Icons.CALCULATE,
                     on_click=self._calcular,
                 ),
