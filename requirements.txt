@@ -1,2 +1,5 @@
-flet>=0.25.0
+# Interfaz gráfica. Se fija a la serie 0.27.x: es la primera que incluye
+# ReorderableListView (usado por el formulario) y mantiene la API ft.app(target=...).
+# Las versiones 1.x reescriben la API y rompen la aplicación.
+flet[all]>=0.27,<0.28
 pytest>=8.0.0

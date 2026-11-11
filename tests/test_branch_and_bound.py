@@ -362,3 +362,38 @@ def test_estadisticas_y_resultado_bb_properties(grafo):
     assert "podas_mejor_costo" in d
     assert st.tiempo_usado >= 0
     assert st.podas_costo == st.podas_mejor_costo
+
+
+# ==============================================================================
+# Prueba 12: Métrica de poda frente a n! (sección 11 - sustentación)
+# ==============================================================================
+def test_nodos_explorados_muy_por_debajo_de_n_factorial(grafo):
+    """La poda debe mantener los nodos expandidos muy por debajo de n!.
+
+    Es la métrica que respalda la tabla de poda del informe: a medida que crece
+    n, el espacio de órdenes posibles crece como n!, pero Branch and Bound con
+    cotas admisibles expande solo una fracción pequeña de ese espacio.
+    """
+    import math
+
+    for n in range(5, 9):  # 5, 6, 7, 8 destinos
+        destinos = list(range(1, n + 1))
+        matriz = MatrizCaminos.construir(grafo, 0, destinos)
+        res = BranchAndBound(matriz, presupuesto=10000.0, k=10).mejores_rutas()
+
+        espacio_total = math.factorial(n)  # n! órdenes posibles
+        expandidos = res.estadisticas.nodos_expandidos
+
+        # Se encontraron rutas y el algoritmo registró actividad real de poda.
+        assert res.rutas, f"n={n}: no se hallaron rutas factibles"
+        assert expandidos > 0, f"n={n}: no se expandió ningún nodo"
+
+        # La poda es efectiva: los nodos expandidos son una fracción del espacio.
+        assert expandidos < espacio_total, (
+            f"n={n}: expandidos={expandidos} no es menor que n!={espacio_total}"
+        )
+        # Para n grande (>=7) la poda debe recortar al menos la mitad del espacio.
+        if n >= 7:
+            assert expandidos < espacio_total / 2, (
+                f"n={n}: poda insuficiente, expandidos={expandidos}, n!={espacio_total}"
+            )

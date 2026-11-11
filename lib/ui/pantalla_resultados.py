@@ -95,7 +95,7 @@ class PantallaResultados(ft.Container):
             if self.presupuesto is not None
             else ""
         )
-        return [
+        controles: list[ft.Control] = [
             ft.Text(
                 f"{'★ Mejor ruta' if indice == 0 else f'Ruta {indice + 1}'}: {ciudades}",
                 weight=ft.FontWeight.BOLD,
@@ -108,3 +108,17 @@ class PantallaResultados(ft.Container):
             ft.Text("Desglose por tramo:"),
             *tramos,
         ]
+        # HU-14: botón "Ver en grafo" que abre la pantalla de grafo con ESTA ruta.
+        if self.on_ver_en_grafo is not None:
+            controles.append(
+                ft.Row(
+                    [
+                        ft.ElevatedButton(
+                            "Ver en grafo",
+                            icon=ft.Icons.ACCOUNT_TREE,
+                            on_click=lambda _e, r=ruta: self.on_ver_en_grafo(r),
+                        )
+                    ]
+                )
+            )
+        return controles
