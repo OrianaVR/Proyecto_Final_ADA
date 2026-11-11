@@ -126,10 +126,12 @@ python main.py
 
 La aplicación tiene cuatro pantallas:
 
-1. **Datos del viaje:** selecciona origen y hasta 12 destinos, configura
-   presupuesto, K, ida y vuelta y las ponderaciones α/β.
-2. **Orden de visita:** elige sin orden, orden total mediante una lista
-   arrastrable o precedencias parciales como «A antes que B» y «este primero».
+1. **Datos del viaje:** selecciona origen y hasta 12 destinos, configura el
+   presupuesto, la cantidad de alternativas, ida y vuelta y la prioridad entre
+   ahorrar tiempo o ahorrar dinero.
+2. **Orden de visita:** elige que TravelPath decida, selecciona el orden total
+   mediante una lista arrastrable o agrega prioridades como «A antes que B» y
+   «empezar por esta ciudad».
 3. **Resultados:** ordena las rutas por peso, muestra el presupuesto restante y
    detalla cada tramo. Cada ruta ofrece un botón **«Ver en grafo»**.
 4. **Grafo visual:** dibuja los destinos en círculo con sus pesos, resalta el

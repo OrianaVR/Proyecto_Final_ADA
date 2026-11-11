@@ -7,6 +7,13 @@ from typing import Callable, Optional
 import flet as ft
 
 from lib.models.entrada import Entrada
+from lib.ui.estilos import (
+    boton_principal,
+    encabezado,
+    pasos,
+    tarjeta_seccion,
+    texto_ayuda,
+)
 from lib.services.planificador_viaje import PlanificadorViaje, ResultadoPlanificacion
 from lib.structures.grafo import Grafo
 
@@ -44,7 +51,12 @@ class PantallaFormulario(ft.Container):
         self.txt_presupuesto = ft.TextField(
             label="Presupuesto ($)", value="500", width=210
         )
-        self.txt_k = ft.TextField(label="Rutas K", value="10", width=130)
+        self.txt_k = ft.TextField(
+            label="Cantidad de alternativas",
+            value="10",
+            hint_text="Ej. 5",
+            width=190,
+        )
         self.sw_ida_vuelta = ft.Switch(label="Ida y vuelta", value=False)
         self.slider_alfa = ft.Slider(
             min=0.0,
@@ -54,7 +66,7 @@ class PantallaFormulario(ft.Container):
             label="α: {value}",
             on_change=self._actualizar_ponderaciones,
         )
-        self.lbl_ponderaciones = ft.Text("α: 0.50 | β: 0.50")
+        self.lbl_ponderaciones = ft.Text("Preferencia actual: equilibrar")
 
         for destino in grafo.destinos:
             self.chips_destinos.controls.append(
@@ -68,37 +80,67 @@ class PantallaFormulario(ft.Container):
 
         self.content = ft.Column(
             scroll=ft.ScrollMode.AUTO,
+            spacing=18,
             controls=[
-                ft.Text(
-                    "TravelPath: Datos del viaje",
-                    size=22,
-                    weight=ft.FontWeight.BOLD,
+                encabezado(
+                    "Planifica tu viaje",
+                    "Configura los datos básicos de tu recorrido",
+                    ft.Icons.EXPLORE,
                 ),
-                ft.Text(
-                    "Selecciona el origen y los destinos. En el siguiente paso "
-                    "podrás definir el orden de visita.",
-                    size=13,
+                pasos(1),
+                tarjeta_seccion(
+                    ft.Column(
+                        [
+                            self.dd_origen,
+                            ft.Text("Destinos a visitar", weight=ft.FontWeight.BOLD),
+                            texto_ayuda("Selecciona hasta 12 ciudades diferentes del origen."),
+                            self.chips_destinos,
+                            self.lbl_contador,
+                        ],
+                        spacing=12,
+                    ),
+                    "¿A dónde quieres viajar?",
+                    ft.Icons.LOCATION_ON,
                 ),
-                self.dd_origen,
-                ft.Text("Destinos a visitar (máximo 12):"),
-                self.chips_destinos,
-                self.lbl_contador,
-                ft.Row(
-                    [
-                        self.txt_presupuesto,
-                        self.txt_k,
-                        self.sw_ida_vuelta,
-                    ],
-                    wrap=True,
+                tarjeta_seccion(
+                    ft.Column(
+                        [
+                            ft.Row(
+                                [
+                                    self.txt_presupuesto,
+                                    self.txt_k,
+                                    self.sw_ida_vuelta,
+                                ],
+                                wrap=True,
+                                spacing=18,
+                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                            ),
+                            ft.Text("¿Qué prefieres priorizar?", weight=ft.FontWeight.BOLD),
+                            texto_ayuda(
+                                "Elige si quieres gastar menos, equilibrar ambas cosas "
+                                "o llegar más rápido."
+                            ),
+                            self.slider_alfa,
+                            ft.Row(
+                                [
+                                    ft.Text("Ahorrar tiempo", size=11),
+                                    ft.Text("Equilibrar", size=11),
+                                    ft.Text("Ahorrar dinero", size=11),
+                                ],
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            ),
+                            self.lbl_ponderaciones,
+                        ],
+                        spacing=12,
+                    ),
+                    "Preferencias del viaje",
+                    ft.Icons.TUNE,
                 ),
-                ft.Text("Prioridad precio / tiempo:"),
-                self.slider_alfa,
-                self.lbl_ponderaciones,
                 self.mensaje,
-                ft.FilledButton(
-                    text="Continuar al orden de visita",
-                    icon=ft.Icons.ARROW_FORWARD,
-                    on_click=self._continuar,
+                boton_principal(
+                    "Continuar al orden de visita",
+                    ft.Icons.ARROW_FORWARD,
+                    self._continuar,
                 ),
             ],
         )
@@ -120,7 +162,13 @@ class PantallaFormulario(ft.Container):
 
     def _actualizar_ponderaciones(self, evento: ft.ControlEvent) -> None:
         alfa = float(evento.control.value)
-        self.lbl_ponderaciones.value = f"α: {alfa:.2f} | β: {1 - alfa:.2f}"
+        if alfa >= 0.75:
+            preferencia = "ahorrar dinero"
+        elif alfa <= 0.25:
+            preferencia = "ahorrar tiempo"
+        else:
+            preferencia = "equilibrar"
+        self.lbl_ponderaciones.value = f"Preferencia actual: {preferencia}"
         self.update()
 
     def _continuar(self, _event: ft.ControlEvent) -> None:
@@ -154,7 +202,7 @@ class PantallaFormulario(ft.Container):
                 beta=1 - float(self.slider_alfa.value),
             )
         except (TypeError, ValueError):
-            self.mensaje.value = "Revisa el presupuesto y la cantidad de rutas K."
+            self.mensaje.value = "Revisa el presupuesto y la cantidad de alternativas."
             self.update()
             return
 

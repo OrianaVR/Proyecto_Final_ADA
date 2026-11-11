@@ -9,6 +9,7 @@ import flet as ft
 
 from lib.models.entrada import Entrada
 from lib.services.planificador_viaje import PlanificadorViaje, ResultadoPlanificacion
+from lib.ui.estilos import boton_principal, boton_secundario, encabezado, pasos, tarjeta_seccion, texto_ayuda
 from lib.structures.grafo import Grafo
 
 
@@ -45,15 +46,15 @@ class PantallaOrden(ft.Container):
             options=[
                 ft.dropdown.Option(
                     key=self.MODO_LIBRE,
-                    text="Sin orden: el algoritmo decide",
+                    text="Dejar que TravelPath decida",
                 ),
                 ft.dropdown.Option(
                     key=self.MODO_SECUENCIA,
-                    text="Orden total: reordenar destinos",
+                    text="Elegir el orden completo",
                 ),
                 ft.dropdown.Option(
                     key=self.MODO_PRECEDENCIAS,
-                    text="Precedencias: A antes que B",
+                    text="Indicar prioridades entre destinos",
                 ),
             ],
             on_change=self._cambiar_modo,
@@ -71,24 +72,89 @@ class PantallaOrden(ft.Container):
             for destino in entrada_base.destinos
         ]
         self.dd_antes = ft.Dropdown(
-            label="Visitar antes",
+            label="Primero debe visitarse",
             width=200,
             options=list(opciones),
         )
         self.dd_despues = ft.Dropdown(
-            label="que",
+            label="Después se visita",
             width=200,
             options=list(opciones),
         )
         self.dd_primero = ft.Dropdown(
-            label="Ciudad que va primero",
+            label="Quiero comenzar por...",
             width=240,
             options=list(opciones),
         )
         self.lista_precedencias = ft.Column()
 
+        self.ayuda_modo = texto_ayuda(
+            "Si no tienes una preferencia, elige la primera opción y TravelPath "
+            "buscará automáticamente una buena combinación."
+        )
+        self.seccion_orden_total = ft.Container(
+            content=tarjeta_seccion(
+                ft.Column(
+                    [
+                        texto_ayuda(
+                            "Arrastra las ciudades para decidir exactamente el "
+                            "orden en el que quieres visitarlas."
+                        ),
+                        self.lista_orden,
+                    ],
+                    spacing=12,
+                ),
+                "Quiero elegir todo el orden",
+                ft.Icons.FORMAT_LIST_NUMBERED,
+            ),
+            visible=False,
+        )
+        self.seccion_precedencias = ft.Container(
+            content=tarjeta_seccion(
+                ft.Column(
+                    [
+                        texto_ayuda(
+                            "Indica solo las prioridades importantes. TravelPath "
+                            "decidirá el resto del recorrido."
+                        ),
+                        ft.Row(
+                            [
+                                self.dd_antes,
+                                self.dd_despues,
+                                ft.IconButton(
+                                    ft.Icons.ADD_CIRCLE,
+                                    tooltip="Añadir prioridad",
+                                    on_click=self._agregar_precedencia,
+                                ),
+                            ],
+                            wrap=True,
+                            spacing=12,
+                        ),
+                        ft.Row(
+                            [
+                                self.dd_primero,
+                                ft.TextButton(
+                                    text="Empezar por esta ciudad",
+                                    icon=ft.Icons.FLAG,
+                                    on_click=self._marcar_primero,
+                                ),
+                            ],
+                            wrap=True,
+                            spacing=12,
+                        ),
+                        self.lista_precedencias,
+                    ],
+                    spacing=12,
+                ),
+                "Quiero establecer algunas prioridades",
+                ft.Icons.ACCOUNT_TREE,
+            ),
+            visible=False,
+        )
+
         self.content = ft.Column(
             scroll=ft.ScrollMode.AUTO,
+            spacing=18,
             controls=[
                 ft.Row(
                     [
@@ -99,75 +165,51 @@ class PantallaOrden(ft.Container):
                                 self.on_volver() if self.on_volver else None
                             ),
                         ),
-                        ft.Text(
+                        encabezado(
                             "Orden de visita",
-                            size=22,
-                            weight=ft.FontWeight.BOLD,
-                        ),
-                    ]
-                ),
-                ft.Text(
-                    "Elige cómo debe decidirse el recorrido. Puedes dejarlo "
-                    "sin orden y continuar.",
-                    size=13,
-                ),
-                ft.Text(
-                    self._resumen_viaje(),
-                    size=12,
-                    color=ft.Colors.GREY_500,
-                ),
-                self.dd_modo,
-                ft.Text(
-                    "Orden total: arrastra los destinos para fijar la secuencia "
-                    "completa.",
-                    weight=ft.FontWeight.BOLD,
-                ),
-                self.lista_orden,
-                ft.Text(
-                    "Precedencias: agrega solo las reglas que quieras respetar.",
-                    weight=ft.FontWeight.BOLD,
-                ),
-                ft.Row(
-                    [
-                        self.dd_antes,
-                        self.dd_despues,
-                        ft.IconButton(
-                            ft.Icons.ADD,
-                            tooltip="Agregar regla A antes que B",
-                            on_click=self._agregar_precedencia,
+                            "Define cómo debe organizarse el recorrido",
+                            ft.Icons.SORT,
                         ),
                     ],
-                    wrap=True,
+                    spacing=8,
                 ),
-                ft.Row(
-                    [
-                        self.dd_primero,
-                        ft.TextButton(
-                            text="Marcar este primero",
-                            icon=ft.Icons.FLAG,
-                            on_click=self._marcar_primero,
-                        ),
-                    ],
-                    wrap=True,
+                pasos(3),
+                tarjeta_seccion(
+                    ft.Column(
+                        [
+                            ft.Text(
+                                self._resumen_viaje(),
+                                size=13,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
+                            ),
+                            self.dd_modo,
+                            self.ayuda_modo,
+                        ],
+                        spacing=12,
+                    ),
+                    "Configuración del orden",
+                    ft.Icons.TUNE,
                 ),
-                self.lista_precedencias,
+                self.seccion_orden_total,
+                self.seccion_precedencias,
                 self.mensaje,
                 ft.Row(
                     [
-                        ft.OutlinedButton(
-                            text="Volver a datos",
-                            icon=ft.Icons.ARROW_BACK,
-                            on_click=lambda _event: (
+                        boton_secundario(
+                            "Volver a datos",
+                            ft.Icons.ARROW_BACK,
+                            lambda _event: (
                                 self.on_volver() if self.on_volver else None
                             ),
                         ),
-                        ft.FilledButton(
-                            text="Calcular rutas",
-                            icon=ft.Icons.CALCULATE,
-                            on_click=self._calcular,
+                        boton_principal(
+                            "Buscar mejores rutas",
+                            ft.Icons.AUTO_AWESOME,
+                            self._calcular,
                         ),
                     ],
                     wrap=True,
+                    spacing=12,
                 ),
             ],
         )
@@ -182,6 +224,24 @@ class PantallaOrden(ft.Container):
 
     def _cambiar_modo(self, _event: ft.ControlEvent) -> None:
         self.mensaje.value = ""
+        modo = self.dd_modo.value or self.MODO_LIBRE
+        self.seccion_orden_total.visible = modo == self.MODO_SECUENCIA
+        self.seccion_precedencias.visible = modo == self.MODO_PRECEDENCIAS
+        if modo == self.MODO_SECUENCIA:
+            self.ayuda_modo.value = (
+                "Arrastra las ciudades de la lista hasta obtener el recorrido "
+                "exacto que quieres realizar."
+            )
+        elif modo == self.MODO_PRECEDENCIAS:
+            self.ayuda_modo.value = (
+                "Agrega solo las reglas importantes; TravelPath elegirá el resto "
+                "del orden automáticamente."
+            )
+        else:
+            self.ayuda_modo.value = (
+                "TravelPath comparará las combinaciones posibles y buscará una "
+                "ruta conveniente para ti."
+            )
         self.update()
 
     def _actualizar_lista_orden(self) -> None:
@@ -203,14 +263,14 @@ class PantallaOrden(ft.Container):
 
     def _agregar_precedencia(self, _event: ft.ControlEvent) -> None:
         if self.dd_antes.value is None or self.dd_despues.value is None:
-            self.mensaje.value = "Selecciona las dos ciudades de la regla."
+            self.mensaje.value = "Selecciona las dos ciudades para crear la prioridad."
             self.update()
             return
 
         antes = int(self.dd_antes.value)
         despues = int(self.dd_despues.value)
         if antes == despues:
-            self.mensaje.value = "Una ciudad no puede ir antes que sí misma."
+            self.mensaje.value = "Elige dos ciudades diferentes."
             self.update()
             return
         if (antes, despues) not in self._precedencias:
@@ -221,7 +281,7 @@ class PantallaOrden(ft.Container):
 
     def _marcar_primero(self, _event: ft.ControlEvent) -> None:
         if self.dd_primero.value is None:
-            self.mensaje.value = "Selecciona la ciudad que debe ir primero."
+            self.mensaje.value = "Selecciona la ciudad desde la que quieres comenzar."
             self.update()
             return
 
@@ -276,9 +336,11 @@ class PantallaOrden(ft.Container):
         )
 
         resultado = self.planificador.planificar(entrada)
-        if resultado.mensaje_error:
+        if resultado.mensaje_error and not resultado.rutas_fuera_presupuesto:
             self.mensaje.value = resultado.mensaje_error
             self.update()
             return
         if self.on_calcular:
+            # Aunque el presupuesto sea insuficiente, pasamos a resultados
+            # cuando existe una alternativa para que el usuario pueda verla.
             self.on_calcular(resultado)

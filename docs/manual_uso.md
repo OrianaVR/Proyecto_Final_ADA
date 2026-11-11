@@ -24,31 +24,34 @@ Escribe el presupuesto en pesos. Es un **límite duro sobre el dinero real**: la
 aplicación solo propone rutas cuyo costo total en pesos cabe dentro de esa cifra.
 El presupuesto nunca se compara contra el «peso».
 
-### Cantidad de rutas (K)
-Indica cuántas rutas quieres ver como máximo. Por defecto, 10. La aplicación
-devuelve las **K mejores** ordenadas de menor a mayor peso.
+### Cantidad de alternativas
+
+Indica cuántas opciones quieres comparar como máximo. Por defecto, se muestran
+10 alternativas ordenadas según tus preferencias.
+
+### Prioridad del viaje
+
+Mueve el control entre estas opciones:
+
+- **Ahorrar tiempo:** prioriza recorridos más rápidos.
+- **Equilibrar:** combina tiempo y dinero por igual.
+- **Ahorrar dinero:** prioriza recorridos más económicos.
+
+Internamente estas preferencias se convierten en ponderaciones para el peso
+combinado, pero no necesitas conocer esos términos técnicos para usar la
+aplicación.
 
 ### Ida y vuelta
 Si activas este interruptor, el recorrido suma el **tramo de regreso al origen**
 tanto al peso como al dinero. Si lo dejas apagado, el viaje termina en el último
 destino (solo ida).
 
-### Ajustar precio / tiempo (ponderaciones α y β)
-El «peso» de cada tramo combina costo y tiempo con la fórmula:
+### Prioridad del viaje
 
-```
-peso(i, j) = α · costo_normalizado(i, j) + β · tiempo_normalizado(i, j)
-```
-
-El deslizador α/β te permite decidir qué priorizar:
-
-- **Más hacia α (precio):** se minimiza sobre todo el dinero. Útil si el
-  presupuesto es ajustado.
-- **Más hacia β (tiempo):** se minimiza sobre todo el tiempo de viaje. Útil si
-  tienes prisa.
-
-El costo y el tiempo se **normalizan** antes de combinarlos, de modo que el
-dinero (que se mide en miles) no aplaste al tiempo (que se mide en horas).
+Mueve el control entre **Ahorrar tiempo**, **Equilibrar** y **Ahorrar dinero**.
+La aplicación normaliza costo y tiempo antes de combinarlos para que ninguna
+unidad domine injustamente. El usuario no necesita conocer α ni β para utilizar
+esta opción.
 
 Pulsa **«Continuar al orden de visita»** para pasar a la segunda pantalla.
 
@@ -56,31 +59,29 @@ Pulsa **«Continuar al orden de visita»** para pasar a la segunda pantalla.
 
 ## 2. Pantalla de orden de visita
 
-La segunda pantalla recibe los datos del viaje y permite elegir cómo se define la
-secuencia. La aplicación mantiene visibles las opciones para que sea claro qué
-estás configurando.
+La segunda pantalla recibe los datos del viaje y te permite elegir cómo quieres
+organizar el recorrido.
 
 ### Sin orden
 El algoritmo decide libremente el mejor orden de visita respetando el
 presupuesto y la configuración de ida y vuelta.
 
 ### Orden total
-Selecciona **«Orden total: reordenar destinos»** y arrastra la lista completa hasta
-obtener la secuencia deseada. La aplicación respeta ese orden exacto y calcula el
+Selecciona **«Elegir el orden completo»** y arrastra las ciudades hasta obtener
+la secuencia deseada. La aplicación respeta ese orden exacto y calcula el
 camino más barato entre cada par consecutivo.
 
 ### Precedencias parciales
-Selecciona **«Precedencias: A antes que B»** y agrega reglas como «Bogotá antes
-que Medellín». También puedes marcar una ciudad como primera, lo que crea una
-regla contra todos los destinos seleccionados. Puedes eliminar cualquier regla
+Selecciona **«Indicar prioridades entre destinos»** y agrega reglas como «Bogotá
+antes que Medellín». También puedes indicar por qué ciudad quieres comenzar. Puedes eliminar cualquier regla
 antes de calcular.
 
 Si las reglas se contradicen, la aplicación informa el ciclo de precedencias.
 Cuando no hay una ruta dentro del presupuesto, el mensaje de mínimo necesario
 respeta las precedencias configuradas.
 
-Pulsa **«Calcular rutas»** para obtener los resultados, o **«Volver a datos»**
-para modificar la selección inicial.
+Pulsa **«Buscar mejores rutas»** para obtener los resultados, o **«Volver a
+datos»** para modificar la selección inicial.
 
 ---
 
@@ -100,6 +101,10 @@ Muestra las rutas encontradas, de la mejor a la peor según su peso.
 
 Cada ruta tiene un botón **«Ver en grafo»** que abre la pantalla de grafo con esa
 ruta concreta.
+
+Si ninguna ruta cabe en el presupuesto, la aplicación muestra el mínimo
+necesario y también ofrece **«Ver rutas de todos modos»** para revisar la mejor
+alternativa aunque supere el límite.
 
 ---
 
@@ -142,10 +147,10 @@ La aplicación valida tu entrada y muestra mensajes claros cuando algo no cuadra
 
 ## 6. Notas importantes
 
-- El **listado completo** de rutas se implementa como el **listado ordenado de
-  las K mejores**. Con muchos destinos el número de órdenes posibles crece como
-  `n!` (millones a partir de 10 destinos), por lo que la aplicación lista las K
-  mejores en vez de todas. Consulta el [informe de poda](tabla_poda.md) para el
-  detalle.
+- La aplicación muestra la cantidad de alternativas que solicites, ordenadas de
+  mejor a peor. Con muchos destinos el número de órdenes posibles crece como
+  `n!` (millones a partir de 10 destinos), por lo que se muestran las mejores
+  opciones en vez de todas. Consulta el [informe de poda](tabla_poda.md) para
+  el detalle.
 - El **peso** es adimensional y solo sirve para ordenar y optimizar. El
   **presupuesto** siempre se compara contra el **dinero real** en pesos.

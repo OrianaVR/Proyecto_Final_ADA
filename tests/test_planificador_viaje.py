@@ -76,6 +76,7 @@ def test_informa_minimo_de_presupuesto(planificador):
     )
     assert not resultado.exitosa
     assert resultado.minimo_necesario is not None
+    assert len(resultado.rutas_fuera_presupuesto) == 1
     assert "Ninguna ruta cabe en tu presupuesto" in (
         resultado.mensaje_error or ""
     )
