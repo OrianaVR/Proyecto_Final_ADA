@@ -28,19 +28,26 @@ from lib.structures.grafo import Grafo
 
 
 # --- Parámetros de dibujo (constantes de presentación, no de dominio) ---
-_ANCHO = 560
-_ALTO = 460
-_RADIO_CIRCULO = 170          # radio de la circunferencia donde se ubican los nodos
+_ANCHO = 600
+_ALTO = 480
+_RADIO_CIRCULO = 180          # radio de la circunferencia donde se ubican los nodos
 _RADIO_NODO = 18              # radio de cada nodo
+_SEPARACION_ETIQUETA = 11     # desplazamiento perpendicular de la etiqueta de peso
+_LARGO_FLECHA = 12            # largo de la punta de flecha en los tramos de la ruta
+
 _COLOR_NODO = ft.Colors.BLUE_400
 _COLOR_NODO_ORIGEN = ft.Colors.AMBER_400
 _COLOR_NODO_ACTIVO = ft.Colors.ORANGE_ACCENT_400
-_COLOR_ARISTA_BASE = ft.Colors.with_opacity(0.22, ft.Colors.GREY_400)
+_COLOR_ARISTA_BASE = ft.Colors.with_opacity(0.30, ft.Colors.ON_SURFACE)
+_COLOR_ARISTA_BASE_TENUE = ft.Colors.with_opacity(0.10, ft.Colors.ON_SURFACE)
 _COLOR_ARISTA_RUTA = ft.Colors.GREEN_400          # tramo de la ruta ya recorrido
 _COLOR_ARISTA_ACTIVA = ft.Colors.ORANGE_ACCENT_400  # tramo que se está iluminando
 _COLOR_ARISTA_PENDIENTE = ft.Colors.with_opacity(0.35, ft.Colors.GREEN_200)
-_COLOR_TEXTO = ft.Colors.WHITE
-_COLOR_TEXTO_PESO = ft.Colors.GREY_300
+# Colores de texto que se adaptan al tema (claro/oscuro) de Flet: ON_SURFACE es
+# oscuro en tema claro y claro en tema oscuro, así el texto siempre contrasta.
+_COLOR_TEXTO = ft.Colors.ON_SURFACE
+_COLOR_TEXTO_PESO = ft.Colors.with_opacity(0.7, ft.Colors.ON_SURFACE)
+_COLOR_TEXTO_PESO_TENUE = ft.Colors.with_opacity(0.25, ft.Colors.ON_SURFACE)
 
 # Duración (segundos) que cada tramo permanece como "activo" en la animación.
 _DURACION_TRAMO = 0.7
@@ -106,6 +113,7 @@ class PantallaGrafo(ft.Container):
                         ),
                     ]
                 ),
+                self._panel_info_ruta(),
                 ft.Row([self._boton_simular]),
                 self._leyenda(),
                 ft.Container(
@@ -144,6 +152,10 @@ class PantallaGrafo(ft.Container):
     def _tiene_tramos(self) -> bool:
         return bool(self.ruta_seleccionada and self.ruta_seleccionada.tramos)
 
+    def _animacion_en_curso(self) -> bool:
+        """True si hay una simulación activa (para atenuar el grafo base)."""
+        return self._tramos_recorridos > 0 or self._tramo_activo is not None
+
     # ------------------------------------------------------------------ #
     # Construcción de las formas del canvas
     # ------------------------------------------------------------------ #
@@ -155,14 +167,29 @@ class PantallaGrafo(ft.Container):
         formas.extend(self._formas_nodos())
         return formas
 
+    @staticmethod
+    def _offset_perpendicular(
+        x1: float, y1: float, x2: float, y2: float, distancia: float
+    ) -> Tuple[float, float]:
+        """Devuelve el punto medio desplazado perpendicular a la línea.
+
+        Sirve para separar la etiqueta de peso de la propia arista y evitar que
+        el texto quede montado sobre la línea.
+        """
+        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+        dx, dy = x2 - x1, y2 - y1
+        longitud = math.hypot(dx, dy) or 1.0
+        # Vector perpendicular normalizado.
+        px, py = -dy / longitud, dx / longitud
+        return mx + px * distancia, my + py * distancia
+
     def _formas_aristas_base(self) -> List[cv.Shape]:
-        """Dibuja las conexiones del grafo en gris tenue, con su peso.
+        """Dibuja las conexiones del grafo en gris, con su peso.
 
         Se recorre solo la mitad superior de la matriz (i < j) para no duplicar
         la línea ni la etiqueta de un par de nodos. Los tramos que forman parte
-        de la ruta se dibujan aparte en `_formas_tramos_ruta`, por encima de
-        estas, para que el resaltado y la animación respeten el orden del
-        recorrido; aquí se omite su etiqueta para no superponer dos textos.
+        de la ruta se dibujan aparte en `_formas_tramos_ruta`. Durante la
+        animación, el grafo base se atenúa para que la ruta resalte.
         """
         formas: List[cv.Shape] = []
         destinos = self.grafo.destinos
@@ -170,6 +197,11 @@ class PantallaGrafo(ft.Container):
         pares_ruta = {
             frozenset((t.origen, t.destino)) for t in self.ruta_seleccionada.tramos
         } if self.ruta_seleccionada else set()
+
+        atenuado = self._animacion_en_curso()
+        color_linea = _COLOR_ARISTA_BASE_TENUE if atenuado else _COLOR_ARISTA_BASE
+        color_texto = _COLOR_TEXTO_PESO_TENUE if atenuado else _COLOR_TEXTO_PESO
+
         for i in range(n):
             for j in range(i + 1, n):
                 id_i = destinos[i].id
@@ -184,17 +216,18 @@ class PantallaGrafo(ft.Container):
                         y1=y1,
                         x2=x2,
                         y2=y2,
-                        paint=ft.Paint(stroke_width=1, color=_COLOR_ARISTA_BASE),
+                        paint=ft.Paint(stroke_width=1, color=color_linea),
                     )
                 )
                 peso = self.grafo.peso(id_i, id_j)
-                mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+                ex, ey = self._offset_perpendicular(x1, y1, x2, y2, _SEPARACION_ETIQUETA)
                 formas.append(
                     cv.Text(
-                        x=mx,
-                        y=my,
+                        x=ex,
+                        y=ey,
                         text=f"{peso:.2f}",
-                        style=ft.TextStyle(size=10, color=_COLOR_TEXTO_PESO),
+                        style=ft.TextStyle(size=10, color=color_texto),
+                        alignment=ft.Alignment(0, 0),
                     )
                 )
         return formas
@@ -206,6 +239,8 @@ class PantallaGrafo(ft.Container):
         - índice < tramos_recorridos  -> ya recorrido (verde)
         - índice == tramo_activo       -> iluminándose ahora (naranja, grueso)
         - resto                        -> pendiente (verde tenue)
+
+        Cada tramo lleva una punta de flecha que indica el sentido del viaje.
         """
         if not self.ruta_seleccionada:
             return []
@@ -235,30 +270,56 @@ class PantallaGrafo(ft.Container):
                     paint=ft.Paint(stroke_width=grosor, color=color),
                 )
             )
-            mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+            formas.extend(self._formas_flecha(x1, y1, x2, y2, color, grosor))
+
+            peso = tramo.peso
+            ex, ey = self._offset_perpendicular(x1, y1, x2, y2, _SEPARACION_ETIQUETA)
             formas.append(
                 cv.Text(
-                    x=mx,
-                    y=my,
-                    text=f"{tramo.peso:.2f}",
+                    x=ex,
+                    y=ey,
+                    text=f"{peso:.2f}",
                     style=ft.TextStyle(
                         size=11,
                         color=color,
                         weight=ft.FontWeight.BOLD,
                     ),
+                    alignment=ft.Alignment(0, 0),
                 )
             )
         return formas
+
+    def _formas_flecha(
+        self, x1: float, y1: float, x2: float, y2: float, color: str, grosor: int
+    ) -> List[cv.Shape]:
+        """Punta de flecha cerca del nodo destino que marca el sentido del tramo."""
+        dx, dy = x2 - x1, y2 - y1
+        longitud = math.hypot(dx, dy) or 1.0
+        ux, uy = dx / longitud, dy / longitud
+        # Punto de la flecha: justo antes del borde del nodo destino.
+        bx, by = x2 - ux * _RADIO_NODO, y2 - uy * _RADIO_NODO
+        ang = math.atan2(uy, ux)
+        a1 = ang + math.radians(150)
+        a2 = ang - math.radians(150)
+        p1 = (bx + _LARGO_FLECHA * math.cos(a1), by + _LARGO_FLECHA * math.sin(a1))
+        p2 = (bx + _LARGO_FLECHA * math.cos(a2), by + _LARGO_FLECHA * math.sin(a2))
+        paint = ft.Paint(stroke_width=grosor, color=color)
+        return [
+            cv.Line(x1=bx, y1=by, x2=p1[0], y2=p1[1], paint=paint),
+            cv.Line(x1=bx, y1=by, x2=p2[0], y2=p2[1], paint=paint),
+        ]
 
     def _formas_nodos(self) -> List[cv.Shape]:
         """Dibuja cada nodo como un círculo con su nombre.
 
         El origen se resalta (ámbar) y, durante la animación, el nodo al que
-        acaba de llegar el recorrido se marca como activo (naranja).
+        acaba de llegar el recorrido se marca como activo (naranja). Si hay
+        ruta, se numera el orden de visita junto al nodo.
         """
         formas: List[cv.Shape] = []
         id_origen = self._id_origen()
         id_activo = self._id_nodo_activo()
+        orden_visita = self._orden_visita()
         for destino in self.grafo.destinos:
             x, y = self._posiciones[destino.id]
             if destino.id == id_activo:
@@ -275,6 +336,21 @@ class PantallaGrafo(ft.Container):
                     paint=ft.Paint(color=color_nodo),
                 )
             )
+            # Número de orden de visita dentro del nodo (si pertenece a la ruta).
+            if destino.id in orden_visita:
+                formas.append(
+                    cv.Text(
+                        x=x,
+                        y=y,
+                        text=str(orden_visita[destino.id]),
+                        style=ft.TextStyle(
+                            size=13,
+                            color=ft.Colors.BLACK,
+                            weight=ft.FontWeight.BOLD,
+                        ),
+                        alignment=ft.Alignment(0, 0),
+                    )
+                )
             etiqueta = destino.alias or destino.nombre
             formas.append(
                 cv.Text(
@@ -290,6 +366,16 @@ class PantallaGrafo(ft.Container):
                 )
             )
         return formas
+
+    def _orden_visita(self) -> dict[int, int]:
+        """Mapa id_destino -> número de orden (1-based) de primera visita."""
+        if not self.ruta_seleccionada:
+            return {}
+        orden: dict[int, int] = {}
+        for posicion, ciudad in enumerate(self.ruta_seleccionada.destinos):
+            if ciudad not in orden:  # el origen puede repetirse al cerrar el ciclo
+                orden[ciudad] = posicion + 1
+        return orden
 
     def _id_nodo_activo(self) -> Optional[int]:
         """Destino al que llega el tramo que se está iluminando, si hay uno."""
@@ -340,8 +426,43 @@ class PantallaGrafo(ft.Container):
         self._boton_simular.update()
 
     # ------------------------------------------------------------------ #
-    # Leyenda
+    # Panel de información y leyenda
     # ------------------------------------------------------------------ #
+    def _panel_info_ruta(self) -> ft.Control:
+        """Tarjeta con peso, dinero, tiempo y secuencia de la ruta seleccionada."""
+        if not self.ruta_seleccionada:
+            return ft.Container(
+                content=ft.Text(
+                    "Grafo completo de destinos. Vuelve a resultados y usa "
+                    "«Ver en grafo» para resaltar y simular una ruta.",
+                    size=12,
+                    italic=True,
+                    color=ft.Colors.with_opacity(0.7, ft.Colors.ON_SURFACE),
+                ),
+                padding=ft.Padding(0, 0, 0, 6),
+            )
+        r = self.ruta_seleccionada
+        nombres = {d.id: d.nombre for d in self.grafo.destinos}
+        secuencia = " → ".join(nombres.get(c, str(c)) for c in r.destinos)
+        return ft.Card(
+            content=ft.Container(
+                padding=12,
+                content=ft.Column(
+                    [
+                        ft.Text(secuencia, weight=ft.FontWeight.BOLD),
+                        ft.Text(
+                            f"Peso: {r.peso_total:.4f}   |   "
+                            f"Dinero: ${r.costo_total:,.2f}   |   "
+                            f"Tiempo: {r.tiempo_total:.1f} h",
+                            size=12,
+                            color=ft.Colors.with_opacity(0.75, ft.Colors.ON_SURFACE),
+                        ),
+                    ],
+                    spacing=4,
+                ),
+            ),
+        )
+
     def _leyenda(self) -> ft.Control:
         elementos: List[ft.Control] = [
             self._item_leyenda(_COLOR_NODO, "Destino"),
