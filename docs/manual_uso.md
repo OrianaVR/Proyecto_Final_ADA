@@ -112,9 +112,12 @@ alternativa aunque supere el límite.
 
 Dibuja los destinos como nodos distribuidos en círculo.
 
-- Cada **conexión** entre ciudades se dibuja con su **peso** como etiqueta.
+- Cada **conexión** entre ciudades se dibuja como una línea, sin mostrar etiquetas
+  numéricas sobre el grafo. El **peso** continúa utilizándose internamente para
+  ordenar y optimizar las rutas, y aparece en el resumen y los resultados.
 - El **nodo origen** se resalta con un color distinto (ámbar).
-- La **ruta seleccionada** se resalta en verde sobre el resto del grafo.
+- La **ruta seleccionada** aparece resaltada desde que se abre el grafo y se
+  mantiene visible sobre el resto de las conexiones.
 
 ### Simular el recorrido
 Pulsa **«Simular recorrido»** para animar la ruta. La animación ilumina el
