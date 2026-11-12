@@ -263,6 +263,10 @@ class _ShellEscritorio:
             self.page.bgcolor = DARK_BACKGROUND
             self.boton_tema.icon = ft.Icons.LIGHT_MODE
             self.boton_tema.tooltip = "Cambiar a tema claro"
+        if isinstance(self.contenedor.content, PantallaGrafo):
+            self.contenedor.content.actualizar_tema(
+                self.page.theme_mode == ft.ThemeMode.DARK
+            )
         self.page.update()
 
     def ver_formulario(self) -> None:
@@ -302,6 +306,7 @@ class _ShellEscritorio:
             grafo=self.grafo,
             ruta_seleccionada=ruta,
             on_volver=lambda: self.ver_resultados(self.estado["resultado"]),
+            tema_oscuro=self.page.theme_mode == ft.ThemeMode.DARK,
         )
         self.page.update()
 

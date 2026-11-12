@@ -61,6 +61,7 @@ def main(page: ft.Page):
             grafo=grafo,
             ruta_seleccionada=ruta,
             on_volver=ver_resultados,
+            tema_oscuro=page.theme_mode == ft.ThemeMode.DARK,
         )
         page.update()
 
